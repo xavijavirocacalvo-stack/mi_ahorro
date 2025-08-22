@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Mi App de Ahorro</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    /* Estilos generales */
+    body { 
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      text-align: center; 
+      margin: 0; 
+      padding: 0;
+      background: #f0f4f8;
+    }
+
+    h1 { color: #333; margin-top: 20px; }
+    h2 { color: #444; }
+
+    .pantalla { display: none; padding: 20px; }
+    .activa { display: block; }
+
+    button {
+      padding: 15px 25px; 
+      margin: 10px; 
+      font-size: 16px; 
+      border: none; 
+      border-radius: 12px; 
+      background: #4CAF50; 
+      color: white; 
+      cursor: pointer;
+      box-shadow: 0px 4px 6px rgba(0,0,0,0.1);
+      transition: 0.2s;
+    }
+
+    button:hover {
+      background: #45a049;
+      transform: translateY(-2px);
+      box-shadow: 0px 6px 8px rgba(0,0,0,0.2);
+    }
+
+    input { 
+      padding: 10px; 
+      margin: 5px; 
+      border-radius: 10px; 
+      border: 1px solid #ccc; 
+      font-size: 16px;
+      width: 100px;
+      text-align: center;
+    }
+
+    #saldo {
+      font-size: 36px; 
+      color: #2c3e50; 
+      margin: 20px 0;
+    }
+
+    /* Objetivos y calendario */
+    .objetivo, li {
+      background: white; 
+      border-radius: 15px; 
+      padding: 15px; 
+      margin: 10px auto; 
+      max-width: 300px; 
+      box-shadow: 0px 3px 6px rgba(0,0,0,0.1);
+      text-align: left;
+    }
+
+    ul { padding-left: 0; list-style: none; }
+
+    /* Diferentes colores para cada pantalla */
+    #pantalla-saldo { background: #d1f2eb; min-height: 100vh; }
+    #pantalla-calendario { background: #f9e79f; min-height: 100vh; }
+    #pantalla-objetivos { background: #fadbd8; min-height: 100vh; }
+    #pantalla-proyeccion { background: #d6eaf8; min-height: 100vh; }
+
+    /* Botones de navegación */
+    .nav-button {
+      background: #3498db; 
+      margin: 5px;
+    }
+
+    .nav-button:hover { background: #2980b9; }
+
+  </style>
+</head>
+<body>
+
+  <!-- Pantalla 1: Saldo -->
+  <div id="pantalla-saldo" class="pantalla activa">
+    <h1>💵 Saldo principal</h1>
+    <h2 id="saldo">0 €</h2>
+    <button onclick="ingreso()">➕ Ingreso</button>
+    <button onclick="extraer()">➖ Extraer</button><br><br>
+    <button class="nav-button" onclick="mostrar('pantalla-calendario')">📅 Calendario</button>
+    <button class="nav-button" onclick="mostrar('pantalla-objetivos')">🎯 Objetivos</button>
+    <button class="nav-button" onclick="mostrar('pantalla-proyeccion')">📊 Proyección</button>
+  </div>
+
+  <!-- Pantalla 2: Calendario -->
+  <div id="pantalla-calendario" class="pantalla">
+    <h1>📅 Ingresos programados</h1>
+    <input type="number" id="dia" placeholder="Día (1-31)">
+    <input type="number" id="cantidad" placeholder="Cantidad €">
+    <button onclick="programarIngreso()">Programar</button>
+    <h3>Lista:</h3>
+    <ul id="lista-ingresos"></ul>
+    <br>
+    <button class="nav-button" onclick="mostrar('pantalla-saldo')">💵 Saldo</button>
+    <button class="nav-button" onclick="mostrar('pantalla-objetivos')">🎯 Objetivos</button>
+    <button class="nav-button" onclick="mostrar('pantalla-proyeccion')">📊 Proyección</button>
+  </div>
+
+  <!-- Pantalla 3: Objetivos -->
+  <div id="pantalla-objetivos" class="pantalla">
+    <h1>🎯 Objetivos de ahorro</h1>
+    <input type="text" id="nombreObjetivo" placeholder="Nombre">
+    <input type="number" id="costoObjetivo" placeholder="Costo €">
+    <button onclick="crearObjetivo()">Crear objetivo</button>
+    <div id="lista-objetivos"></div>
+    <br>
+    <button class="nav-button" onclick="mostrar('pantalla-saldo')">💵 Saldo</button>
+    <button class="nav-button" onclick="mostrar('pantalla-calendario')">📅 Calendario</button>
+    <button class="nav-button" onclick="mostrar('pantalla-proyeccion')">📊 Proyección</button>
+  </div>
+
+  <!-- Pantalla 4: Proyección -->
+  <div id="pantalla-proyeccion" class="pantalla">
+    <h1>📊 Proyección a fin de mes</h1>
+    <h2 id="proyeccion"></h2>
+    <br>
+    <button class="nav-button" onclick="mostrar('pantalla-saldo')">💵 Saldo</button>
+    <button class="nav-button" onclick="mostrar('pantalla-calendario')">📅 Calendario</button>
+    <button class="nav-button" onclick="mostrar('pantalla-objetivos')">🎯 Objetivos</button>
+  </div>
+
+  <script>
+    let saldo = parseFloat(localStorage.getItem("saldo")) || 0;
+    let ingresosProgramados = JSON.parse(localStorage.getItem("ingresosProgramados")) || [];
+    let objetivos = JSON.parse(localStorage.getItem("objetivos")) || [];
+
+    function actualizarSaldo() {
+      document.getElementById("saldo").innerText = saldo.toFixed(2) + " €";
+      localStorage.setItem("saldo", saldo);
+    }
+
+    function ingreso() {
+      let cantidad = parseFloat(prompt("Cantidad a ingresar:"));
+      if (!isNaN(cantidad) && cantidad > 0) {
+        saldo += cantidad;
+        actualizarSaldo();
+      }
+    }
+
+    function extraer() {
+      let cantidad = parseFloat(prompt("Cantidad a extraer:"));
+      if (!isNaN(cantidad) && cantidad > 0) {
+        saldo -= cantidad;
+        if (saldo < 0) saldo = 0;
+        actualizarSaldo();
+      }
+    }
+
+    function mostrar(id) {
+      document.querySelectorAll(".pantalla").forEach(p => p.classList.remove("activa"));
+      document.getElementById(id).classList.add("activa");
+      if (id === "pantalla-calendario") mostrarIngresos();
+      if (id === "pantalla-objetivos") mostrarObjetivos();
+      if (id === "pantalla-proyeccion") calcularProyeccion();
+    }
+
+    function programarIngreso() {
+      let dia = parseInt(document.getElementById("dia").value);
+      let cantidad = parseFloat(document.getElementById("cantidad").value);
+      if (!isNaN(dia) && !isNaN(cantidad) && dia >= 1 && dia <= 31) {
+        ingresosProgramados.push({ dia, cantidad });
+        localStorage.setItem("ingresosProgramados", JSON.stringify(ingresosProgramados));
+        mostrarIngresos();
+      }
+    }
+
+    function mostrarIngresos() {
+      let lista = document.getElementById("lista-ingresos");
+      lista.innerHTML = "";
+      ingresosProgramados.forEach((i, idx) => {
+        let li = document.createElement("li");
+        li.innerText = "Día " + i.dia + ": " + i.cantidad + " €";
+        lista.appendChild(li);
+      });
+    }
+
+    function aplicarIngresosHoy() {
+      let hoy = new Date().getDate();
+      ingresosProgramados.forEach(i => {
+        if (i.dia === hoy && !i.usado) {
+          saldo += i.cantidad;
+          i.usado = true;
+        }
+      });
+      localStorage.setItem("ingresosProgramados", JSON.stringify(ingresosProgramados));
+      actualizarSaldo();
+    }
+
+    function crearObjetivo() {
+      let nombre = document.getElementById("nombreObjetivo").value;
+      let costo = parseFloat(document.getElementById("costoObjetivo").value);
+      if (nombre && !isNaN(costo) && costo > 0) {
+        objetivos.push({ nombre, costo, progreso: 0 });
+        localStorage.setItem("objetivos", JSON.stringify(objetivos));
+        mostrarObjetivos();
+      }
+    }
+
+    function añadirAOjetivo(idx) {
+      let cantidad = parseFloat(prompt("Cantidad a añadir:"));
+      if (!isNaN(cantidad) && cantidad > 0) {
+        objetivos[idx].progreso += cantidad;
+        if (objetivos[idx].progreso > objetivos[idx].costo) {
+          objetivos[idx].progreso = objetivos[idx].costo;
+        }
+        localStorage.setItem("objetivos", JSON.stringify(objetivos));
+        mostrarObjetivos();
+      }
+    }
+
+    function mostrarObjetivos() {
+      let cont = document.getElementById("lista-objetivos");
+      cont.innerHTML = "";
+      objetivos.forEach((o, idx) => {
+        let div = document.createElement("div");
+        div.className = "objetivo";
+        div.innerHTML = `<b>${o.nombre}</b><br>
+                         Progreso: ${o.progreso} / ${o.costo} €<br>
+                         ${o.progreso >= o.costo ? "✅ Completado" : `<button onclick="añadirAOjetivo(${idx})">Añadir dinero</button>`}`;
+        cont.appendChild(div);
+      });
+    }
+
+    function calcularProyeccion() {
+      let hoy = new Date().getDate();
+      let total = saldo;
+      ingresosProgramados.forEach(i => {
+        if (i.dia > hoy) {
+          total += i.cantidad;
+        }
+      });
+      document.getElementById("proyeccion").innerText = "Tendrás aprox: " + total.toFixed(2) + " € a final de mes";
+    }
+
+    // Inicialización
+    aplicarIngresosHoy();
+    actualizarSaldo();
+  </script>
+
+</body>
+</html>
